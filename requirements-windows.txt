@@ -1,0 +1,16 @@
+# PyTorch is installed separately from the official cu128 index.
+numpy==1.26.4
+setuptools==75.8.0
+wheel
+ninja
+mmcv==1.6.0
+yapf==0.32.0
+matplotlib
+lpips
+plyfile==1.0.3
+pytorch-msssim
+imageio[ffmpeg]
+opencv-python==4.11.0.86
+tqdm
+scipy
+tensorboard
