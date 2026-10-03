@@ -64,5 +64,3 @@ The archive contains no user captures, production models, DCC scenes, private ru
 ## Attribution and licensing
 
 The backend is [HUST 4DGaussians](https://github.com/hustvl/4DGaussians), pinned to `843d5ac636c37e4b611242287754f3d4ed150144`. Obtain dependencies from their original sources and retain their license terms. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
-
-No license has been selected for the original workbench/capture/player code in this source release. Public availability does not by itself grant an open-source license. The repository owner can select a license separately; upstream licenses remain applicable to upstream material.
