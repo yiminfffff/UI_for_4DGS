@@ -1,0 +1,13 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "GS4D Local Player",
+  "Description": "Import and play baked 4D Gaussian sequences from the local workbench.",
+  "Category": "Rendering",
+  "CanContainContent": true,
+  "Modules": [
+    {"Name": "GS4D", "Type": "Runtime", "LoadingPhase": "Default"},
+    {"Name": "GS4DEditor", "Type": "Editor", "LoadingPhase": "Default"}
+  ]
+}

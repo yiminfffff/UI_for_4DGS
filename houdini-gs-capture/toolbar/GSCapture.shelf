@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <toolshelf name="gs_capture_houdini" label="4DGS">
+    <memberTool name="gs_capture_houdini_open"/>
+  </toolshelf>
+  <tool name="gs_capture_houdini_open" label="Render for 4DGS" icon="OBJ_camera">
+    <helpText>Open the Solaris and Karma capture panel.</helpText>
+    <script scriptType="python"><![CDATA[
+import gs_capture_houdini
+gs_capture_houdini.show()
+]]></script>
+  </tool>
+</shelfDocument>
