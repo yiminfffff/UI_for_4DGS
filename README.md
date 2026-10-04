@@ -25,7 +25,7 @@ A local Windows desktop workflow for capturing animated effects in Maya or Houdi
 | Desktop | PySide6 Essentials 6.8.3, Pillow 11.3.0 |
 | Maya | Maya 2027 with bundled Arnold |
 | Houdini | Houdini 22.0.368, Python 3.13, Solaris/Karma |
-| Unreal | UE 5.8.2 editor; compile GS4D for the exact installed engine |
+| Unreal | UE 5.8.2 editor; compile 4DGS for the exact installed engine |
 
 Other GPUs, compiler versions and operating systems need separate validation. This source archive does not include a preconfigured CUDA environment.
 
