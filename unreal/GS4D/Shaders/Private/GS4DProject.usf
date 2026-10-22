@@ -1,0 +1,119 @@
+#include "/Engine/Public/Platform.ush"
+
+Buffer<float> SourceData;
+Buffer<uint> SourceIndices;
+RWBuffer<float> OutPositions;
+RWBuffer<uint> OutColors;
+RWBuffer<uint> OutTangents;
+uint PointCount;
+uint SourcePointCount;
+uint FrameA;
+uint FrameB;
+uint SHDegree;
+float FrameAlpha;
+float Focal;
+float3 LocalEye;
+float3 ActorX;
+float3 ActorY;
+float3 ActorZ;
+float3 Right;
+float3 Up;
+float3 Forward;
+float3 LocalRight;
+float3 LocalUp;
+float3 LocalForward;
+float2 PerspectiveLimit;
+
+float Attribute(uint A, uint B, uint Offset)
+{
+    return lerp(SourceData[A+Offset],SourceData[B+Offset],FrameAlpha);
+}
+
+float Bilinear(float3 Diagonal,float3 OffDiagonal,float3 A,float3 B)
+{
+    return dot(A,float3(Diagonal.x*B.x+OffDiagonal.x*B.y+OffDiagonal.y*B.z,
+        OffDiagonal.x*B.x+Diagonal.y*B.y+OffDiagonal.z*B.z,
+        OffDiagonal.y*B.x+OffDiagonal.z*B.y+Diagonal.z*B.z));
+}
+
+float3 WorldVectorToCovarianceBasis(float3 V)
+{
+    return float3(dot(ActorX,V),dot(ActorY,V),dot(ActorZ,V));
+}
+
+uint PackNormal(float3 V,float W)
+{
+    int4 P = int4(round(clamp(float4(V,W),-1,1)*127.0));
+    return (uint(P.x)&255) | ((uint(P.y)&255)<<8) | ((uint(P.z)&255)<<16) | ((uint(P.w)&255)<<24);
+}
+
+[numthreads(64,1,1)]
+void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    uint Index = DispatchThreadId.x;
+    if (Index >= PointCount) return;
+    uint SourceIndex = SourceIndices[Index];
+    uint AOffset = (FrameA*SourcePointCount+SourceIndex)*58;
+    uint BOffset = (FrameB*SourcePointCount+SourceIndex)*58;
+    float3 Position = float3(Attribute(AOffset,BOffset,0),Attribute(AOffset,BOffset,1),Attribute(AOffset,BOffset,2));
+    float3 CovDiagonal = float3(Attribute(AOffset,BOffset,3),Attribute(AOffset,BOffset,6),Attribute(AOffset,BOffset,8));
+    float3 CovOffDiagonal = float3(Attribute(AOffset,BOffset,4),Attribute(AOffset,BOffset,5),Attribute(AOffset,BOffset,7));
+    float Opacity = Attribute(AOffset,BOffset,9);
+    float3 LocalDelta = Position-LocalEye;
+    float3 Delta = LocalDelta.x*ActorX+LocalDelta.y*ActorY+LocalDelta.z*ActorZ;
+    float3 ViewPosition = float3(dot(Delta,Right),dot(Delta,Up),dot(Delta,Forward));
+    float Z = max(ViewPosition.z,0.001);
+    float2 Ratio = clamp(ViewPosition.xy/Z,-PerspectiveLimit,PerspectiveLimit);
+    float3 JX = WorldVectorToCovarianceBasis(Right-Forward*Ratio.x);
+    float3 JY = WorldVectorToCovarianceBasis(Up-Forward*Ratio.y);
+    float Filter = 0.3*(Z/Focal)*(Z/Focal);
+    float A = Bilinear(CovDiagonal,CovOffDiagonal,JX,JX)+Filter;
+    float B = Bilinear(CovDiagonal,CovOffDiagonal,JX,JY);
+    float C = Bilinear(CovDiagonal,CovOffDiagonal,JY,JY)+Filter;
+    float Root = sqrt(max(0,(A-C)*(A-C)+4*B*B));
+    float L1 = max(1e-8,(A+C+Root)*0.5), L2 = max(1e-8,(A+C-Root)*0.5);
+    float Angle = 0.5*atan2(2*B,A-C);
+    float S,Cos;
+    sincos(Angle,S,Cos);
+    float3 Axis1 = (LocalRight*Cos+LocalUp*S)*(3*sqrt(L1));
+    float3 Axis2 = (-LocalRight*S+LocalUp*Cos)*(3*sqrt(L2));
+
+    // The exporter reflects Y relative to the trainer's SH coordinate basis.
+    float3 D = LocalDelta*rsqrt(max(dot(LocalDelta,LocalDelta),1e-20));
+    D.y = -D.y;
+    float X = D.x,Y = D.y,ZZ = D.z;
+    float Basis[16];
+    Basis[0] = 0.28209479177387814;
+    Basis[1] = -0.4886025119029199*Y; Basis[2] = 0.4886025119029199*ZZ; Basis[3] = -0.4886025119029199*X;
+    Basis[4] = 1.0925484305920792*X*Y; Basis[5] = -1.0925484305920792*Y*ZZ;
+    Basis[6] = 0.31539156525252005*(2*ZZ*ZZ-X*X-Y*Y); Basis[7] = -1.0925484305920792*X*ZZ;
+    Basis[8] = 0.5462742152960396*(X*X-Y*Y);
+    Basis[9] = -0.5900435899266435*Y*(3*X*X-Y*Y); Basis[10] = 2.890611442640554*X*Y*ZZ;
+    Basis[11] = -0.4570457994644658*Y*(4*ZZ*ZZ-X*X-Y*Y); Basis[12] = 0.3731763325901154*ZZ*(2*ZZ*ZZ-3*X*X-3*Y*Y);
+    Basis[13] = -0.4570457994644658*X*(4*ZZ*ZZ-X*X-Y*Y); Basis[14] = 1.445305721320277*ZZ*(X*X-Y*Y);
+    Basis[15] = -0.5900435899266435*X*(X*X-3*Y*Y);
+    float3 RGB = 0.5;
+    [loop]
+    for (uint I = 0; I < (SHDegree+1)*(SHDegree+1); ++I)
+    {
+        uint SHOffset = 10+I*3;
+        RGB += Basis[I]*float3(Attribute(AOffset,BOffset,SHOffset),Attribute(AOffset,BOffset,SHOffset+1),Attribute(AOffset,BOffset,SHOffset+2));
+    }
+    uint4 ColorBytes = uint4(floor(saturate(float4(RGB,Opacity))*255.0+0.5));
+    // FColor BGRA memory layout, matching the previous CPU material input.
+    uint PackedColor = ColorBytes.b | (ColorBytes.g<<8) | (ColorBytes.r<<16) | (ColorBytes.a<<24);
+    float3 Tangent = normalize(LocalRight),Normal = normalize(-LocalForward);
+    float Sign = dot(cross(Tangent,normalize(LocalUp)),Normal) < 0 ? -1 : 1;
+    uint PackedTangent = PackNormal(Tangent,1),PackedNormal = PackNormal(Normal,Sign);
+    [unroll]
+    for (uint Corner = 0; Corner < 4; ++Corner)
+    {
+        float SX = (Corner == 1 || Corner == 2) ? 1 : -1;
+        float SY = Corner >= 2 ? 1 : -1;
+        float3 P = Position+SX*Axis1+SY*Axis2;
+        uint Vertex = Index*4+Corner;
+        OutPositions[Vertex*3] = P.x; OutPositions[Vertex*3+1] = P.y; OutPositions[Vertex*3+2] = P.z;
+        OutColors[Vertex] = PackedColor;
+        OutTangents[Vertex*2] = PackedTangent; OutTangents[Vertex*2+1] = PackedNormal;
+    }
+}

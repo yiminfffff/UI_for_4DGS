@@ -6,6 +6,6 @@ public class GS4D : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine" });
-        PrivateDependencyModuleNames.AddRange(new[] { "RenderCore", "RHI" });
+        PrivateDependencyModuleNames.AddRange(new[] { "RenderCore", "RHI", "InputCore", "Json", "Projects" });
     }
 }

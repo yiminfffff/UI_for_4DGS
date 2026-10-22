@@ -7,7 +7,7 @@
   "Category": "Rendering",
   "CanContainContent": true,
   "Modules": [
-    {"Name": "GS4D", "Type": "Runtime", "LoadingPhase": "Default"},
+    {"Name": "GS4D", "Type": "Runtime", "LoadingPhase": "PostConfigInit"},
     {"Name": "GS4DEditor", "Type": "Editor", "LoadingPhase": "Default"}
   ]
 }

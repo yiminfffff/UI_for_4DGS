@@ -1,0 +1,109 @@
+{
+  "measured_date": "2026-10-22",
+  "engine": "5.8.2-56702186+++UE5+Release-5.8",
+  "gpu": "NVIDIA GeForce RTX 4090 Laptop GPU",
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "rhi": "D3D12",
+    "vsync": false,
+    "frame_rate_cap": null
+  },
+  "build": "Standalone Development; desktop single view",
+  "renderer": {
+    "gpu_projection": true,
+    "full_sh": true,
+    "continuous_interpolation": true,
+    "cpu_depth_sort": true,
+    "max_points": 0
+  },
+  "asset": {
+    "gaussians": 8133,
+    "baked_samples": 12,
+    "source_sample_intervals_per_second": 8,
+    "source_span_seconds": 1.375,
+    "playback_with_final_hold_seconds": 1.5,
+    "export_bytes": 22642352
+  },
+  "blast": {
+    "measurement_seconds_per_phase": 12,
+    "phases": [
+      {
+        "phase": "Static",
+        "samples": 6165,
+        "fps": 513.7382011159457,
+        "frame_ms": 1.9465167235525662,
+        "p95_frame_ms": 2.5383010506629944,
+        "game_ms": 1.0207481430491487,
+        "render_ms": 1.93967107887299,
+        "gpu_ms": 0.615558441905403,
+        "distinct_animation_frames": 1
+      },
+      {
+        "phase": "Playback",
+        "samples": 5712,
+        "fps": 475.99238022197085,
+        "frame_ms": 2.100873966792635,
+        "p95_frame_ms": 2.736300230026245,
+        "game_ms": 1.0722734244326417,
+        "render_ms": 2.093690056719032,
+        "gpu_ms": 0.7327693628475946,
+        "distinct_animation_frames": 12
+      },
+      {
+        "phase": "Moving",
+        "samples": 5499,
+        "fps": 458.32419124648806,
+        "frame_ms": 2.181861702041813,
+        "p95_frame_ms": 2.7511008083820343,
+        "game_ms": 1.0928034551535157,
+        "render_ms": 2.1746157489921596,
+        "gpu_ms": 0.6209711945258524,
+        "distinct_animation_frames": 12
+      },
+      {
+        "phase": "CloseUp",
+        "samples": 5875,
+        "fps": 489.61644374071267,
+        "frame_ms": 2.0424150634319225,
+        "p95_frame_ms": 2.6623010635375977,
+        "game_ms": 1.0380649185890847,
+        "render_ms": 2.035245037931077,
+        "gpu_ms": 0.7338606639618569,
+        "distinct_animation_frames": 12
+      },
+      {
+        "phase": "Hidden",
+        "samples": 6652,
+        "fps": 554.2935951056003,
+        "frame_ms": 1.8040980607208472,
+        "p95_frame_ms": 2.2491998970508575,
+        "game_ms": 0.9995219031694921,
+        "render_ms": 1.797484817002383,
+        "gpu_ms": 0.45941834044219926,
+        "distinct_animation_frames": 1
+      }
+    ],
+    "input_checks_passed": true
+  },
+  "trench": {
+    "window": "One uninterrupted third Q playback with no synchronous screenshots",
+    "sample_count": 173,
+    "summed_frame_seconds": 1.50098529830575,
+    "mean_fps": 115.2576245718564,
+    "mean_frame_ms": 8.676215597143063,
+    "p95_frame_ms": 11.050701141357422,
+    "validation_passed": true,
+    "all_source_indices_seen": 12,
+    "requested_animation_times": 159,
+    "within_sample_alpha_changes": 147
+  },
+  "metric_scope": "Whole game-frame time includes the complete scene; FPS = measured frames / summed game-frame seconds. CPU/GPU thread timings overlap and must not be added.",
+  "limitations": [
+    "Different scene measurement windows",
+    "Trench is a short effect test, not sustained gameplay",
+    "Requested continuity states are not GPU readback",
+    "No controlled thermals/power comparison",
+    "No packaged Shipping or VR performance test"
+  ]
+}

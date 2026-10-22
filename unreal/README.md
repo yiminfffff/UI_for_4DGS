@@ -17,11 +17,11 @@ The included GS4DTest project is a minimal source build host. It contains no pla
 
 ## Representation and limits
 
-The exporter evaluates the trained deformation network at captured timestamps. UE receives animated Gaussian attributes, not the PyTorch model. The player holds each sample until the next timestamp; it does not interpolate the neural field at arbitrary times. Translation, full anisotropic covariance, opacity, and degree 0–3 spherical harmonics are retained. Directional color is evaluated for each view. Captured lighting and shadows remain baked into the model; the player does not reconstruct geometry, fix floating artifacts, or provide physical refraction or dynamic shadow casting.
+The exporter evaluates the trained deformation network at captured timestamps. UE receives animated Gaussian attributes, not the PyTorch model. The player continuously interpolates stable-ID position, covariance, opacity and SH attributes between neighboring timestamps. This is an approximation of the baked states, not evaluation of the neural deformation field in UE. Interpolation is enabled by default; `r.GS4D.Interpolate 0` restores sample-and-hold for diagnostic comparisons, and `r.GS4D.Interpolate 1` enables smooth playback. The final sample is held rather than blended into the beginning. Translation, full anisotropic covariance, opacity, and degree 0–3 spherical harmonics are retained. Directional color is evaluated for each view. Captured lighting and shadows remain baked into the model; the player does not reconstruct geometry, fix floating artifacts, or provide physical refraction or dynamic shadow casting.
 
 Coordinates map normalized HUST `(X,Y,Z)` to UE `(X,-Y,Z)*100`. One normalized unit is treated as one meter; this is not restoration of original DCC world scale. Adjust the actor scale if necessary.
 
-This first runtime uses CPU projection and depth sorting with translucent Gaussian quads. Animation data is fully resident, and each frame rebuilds the render proxy. The asset limit is 1.5 GB and 500,000 points. The material converts display-encoded trained colors to linear light for Unreal. Vertex color/opacity quantization, Gaussian footprint truncation, UE transparency, exposure and tone mapping mean results are not pixel-identical to HUST. Multiple Gaussian actors are not globally interleaved by splat depth.
+A global compute shader performs attribute interpolation, covariance projection, full SH color evaluation and quad generation. Source attributes upload once per scene proxy, and persistent GPU buffers are reused. The CPU sorts interpolated positions by depth and updates the index buffer; animation time uses a lightweight render-thread update instead of rebuilding the scene proxy. Stateless scene captures use independent frame resources, and persistent views have separate stereo cache keys. These implementation paths have not established headset correctness or performance. Animation data remains fully resident. The asset limit is 1.5 GB and 500,000 points. The material converts display-encoded trained colors to linear light for Unreal. Vertex color/opacity quantization, Gaussian footprint truncation, UE transparency, exposure and tone mapping mean results are not pixel-identical to HUST. Multiple Gaussian actors are not globally interleaved by splat depth.
 
 Desktop editor import and playback are the initial validation targets. VR stereo correctness, headset frame rate, packaged builds, streaming, mobile rendering and production performance are not certified. This version establishes a working owned import/playback path; it is not yet evidence of lower VR cost than the original effect.
 
@@ -50,3 +50,19 @@ Copy-Item -Recurse unreal/GS4D unreal/GS4DTest/Plugins/GS4D
 5. Open **UE Plugin** in the desktop. Select the target project and engine; its exact BuildId must match. Close Unreal Editor, install the plugin, then import a saved model using **Add to Unreal...**.
 
 Do not publish your engine installation or imported user assets with this source repository. Runtime shipping, VR and alternate engine versions need additional validation.
+
+## GPU shader deployment
+
+Copy the complete `GS4D` plugin when building and updating projects. `Shaders/Private/GS4DProject.usf` is required at runtime, and `GS4D.uplugin` loads the runtime module at `PostConfigInit` so the global shader can register before shader types initialize. Do not deploy only the DLLs to a project with the old source/descriptor layout. The first editor/game launch may compile the new shader.
+
+When updating an existing test host, overwrite its plugin's `Source`, `Shaders` and `GS4D.uplugin` in place; avoid nesting another `GS4D` directory inside it. Build using the existing instructions above, copy the resulting editor binaries into the canonical plugin, then close Unreal and use the workbench's **UE Plugin > Install / Update**. Existing version-1 assets need no reimport or larger bake. This repository remains source-only.
+
+## Optional demo runtime classes
+
+`GS4DPreviewGameMode` provides fly-camera movement, playback controls, HUD and an F8 five-phase desktop benchmark. Create your own empty level, import and place a sequence, and set that game mode to reproduce the preview. `-GS4DBenchmark -GS4DBenchmarkExit` runs the benchmark and exits the test session; reports and screenshots are written under the project's `Saved/GS4DPreview` directory.
+
+`GS4DTrenchGameMode`, `GS4DTrenchCharacter` and `GS4DTrenchExplosion` provide the colliding first-person/Q demo and authored flash/fire-fill envelope. The character defaults to two thirds of its original dimensions. The explosion actor owns playback and lighting on the same clock, hides after the one-shot, and can restart when Q is pressed again. A narrowly matched Pawn-collision correction applies only to the demonstrated scene's exact local-fog helper cube. These classes do not include or download the trench map, Megascans assets, materials or trained explosion. Adapt their scene-specific setup to content you own.
+
+The normal game never runs validation automatically. `-GS4DTrenchValidate -GS4DTrenchValidateExit` opts into movement, jump, mouse and Q checks, writes a report under `Saved/GS4DTrenchValidation`, and exits that session.
+
+Measured desktop performance and timing-window limitations are in [PERFORMANCE.md](PERFORMANCE.md).

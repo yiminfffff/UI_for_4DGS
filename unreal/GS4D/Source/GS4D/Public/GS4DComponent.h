@@ -24,15 +24,19 @@ public:
     UFUNCTION(BlueprintCallable, Category="4DGS") void Play() { bPlaying = true; }
     UFUNCTION(BlueprintCallable, Category="4DGS") void Pause() { bPlaying = false; }
     int32 FrameIndex() const;
+    // Game-thread requested state, shared with the render-thread interpolation math.
+    void GetInterpolationState(int32& OutFrameA, int32& OutFrameB, float& OutAlpha) const;
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
     virtual int32 GetNumMaterials() const override { return 1; }
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
+    virtual void SendRenderDynamicData_Concurrent() override;
 #if WITH_EDITOR
     virtual void PostEditChangeProperty(FPropertyChangedEvent& Event) override;
 #endif
 private:
-    int32 DisplayedFrame = INDEX_NONE;
+    float SubmittedTime = -1;
+    float PlaybackPhase = 0;
 };
 
 UCLASS()

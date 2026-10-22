@@ -13,7 +13,7 @@ A local Windows desktop workflow for capturing animated effects in Maya or Houdi
 - In-memory live preview from initialized point clouds through coarse/fine training. Updates are coalesced between iterations and add some training overhead.
 - Maya-style Alt-drag navigation, animation playback and a **Match Source Camera** toggle.
 - Independent GPU detection, training-environment checks/extension repair and project-plugin checks/install.
-- Video export and a self-authored Unreal GS4D editor/runtime plugin with animation baking/import.
+- Video export and a self-authored Unreal GS4D editor/runtime plugin with animation baking/import, GPU splat generation and continuous baked-attribute interpolation.
 
 ## Tested targets
 
@@ -53,11 +53,26 @@ windows-compat.patch      Changes against the pinned upstream HUST source
 conda-windows-explicit.txt Reference training environment manifest
 ```
 
+## Unreal playback update — 22 October 2026
+
+The GPU player replaces CPU-generated splat geometry and sample-and-hold animation. Interpolation is enabled by default and works with existing `.gs4d` version-1 assets without rebaking. All 8,133 Gaussians in the measured explosion are retained; its export remains 21.59 MiB.
+
+Measured **whole-scene** frame rates on RTX 4090 Laptop GPU, UE 5.8.2, 1280 × 720, D3D12, standalone Development, VSync off and uncapped:
+
+| Scene | Mean overall FPS | Mean frame time | Measurement |
+| --- | ---: | ---: | --- |
+| Blast empty scene, explosion playing | 475.99 | 2.101 ms | 12 seconds after warmup |
+| Playable trench scene, Q explosion and authored lights | 115.26 | 8.676 ms | One uninterrupted 1.501-second playback |
+
+These are complete game-frame timings, not isolated shader timings. The trench measurement is a short effect test rather than a sustained gameplay benchmark. See [methods, full results and limitations](unreal/PERFORMANCE.md). Demo runtime classes are included; datasets, captured effects, UE levels and third-party scene assets are not distributed.
+
+After updating source, rebuild with your exact engine and deploy the entire plugin, including `Shaders` and `GS4D.uplugin`; the runtime module must load at `PostConfigInit`. See [Unreal build/install](unreal/README.md).
+
 ## Limits
 
 The workbench reconstructs captured appearance. Lighting, shadows and background are baked; successful training does not imply clean geometry, physically correct refraction or production fluid/fracture quality. Opacity resets can temporarily produce a pale live preview; the viewer shows the actual current model.
 
-UE receives sampled, baked Gaussian animation rather than the neural network. The initial player uses CPU projection/depth sorting and translucent quads, holds samples between timestamps, and does not establish a VR performance advantage. Headset stereo, packaged games, streaming and mobile performance require further work.
+UE receives sampled, baked Gaussian animation rather than the neural network. The player interpolates stable Gaussian IDs between samples on the GPU, evaluates anisotropic projection and full degree 0–3 SH color there, and reuses persistent geometry buffers. CPU depth sorting and Unreal translucent materials preserve the existing compositing path. Headset stereo, packaged games, streaming and mobile performance require separate validation.
 
 The archive contains no user captures, production models, DCC scenes, private run history, credentials or Python/engine installations. A fresh machine installation has not been verified from this archive; existing-machine integration and focused regression tests are recorded in [VALIDATION.md](VALIDATION.md).
 
